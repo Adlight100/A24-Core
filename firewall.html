@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A24 NOC - Security Firewall</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #060913; color: #cbd5e1; padding: 16px; min-height: 100vh; }
+        header { background-color: #090d1a; border: 1px solid #1e293b; padding: 14px; border-radius: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 18px; font-weight: bold; color: #10b981; text-transform: uppercase; text-decoration: none; }
+        .back-btn { background: #0f172a; border: 1px solid #334155; color: #10b981; font-size: 11px; padding: 8px 14px; border-radius: 6px; cursor: pointer; text-decoration: none; font-weight: bold; text-transform: uppercase; }
+        .card { background: #0f172a; border: 1px solid #1e293b; padding: 16px; border-radius: 12px; margin-bottom: 16px; }
+        .section-title { font-size: 11px; font-weight: bold; text-transform: uppercase; color: #64748b; margin-bottom: 14px; font-family: monospace; tracking: 0.05em; }
+        .sys-row { background: #020617; border: 1px solid #0f172a; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 11px; font-family: monospace; }
+        .sys-btn { background: #0f172a; border: 1px solid #334155; color: #cbd5e1; font-size: 10px; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
+        .sys-btn.active { color: #10b981; border-color: rgba(16, 185, 129, 0.3); }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="/dashboard" class="logo">🛡️ A24 PACKET FIREWALL</a>
+        <a href="/dashboard" class="back-btn">⬅️ Back Home</a>
+    </header>
+
+    <div class="card">
+        <div class="section-title">🛡️ Protocol Filtering & Kernel Deep Packet Inspection</div>
+        <div class="sys-row">
+            <div>🚫 Block Abusive Torrent Client Sharing Traffic (P2P Shield)</div>
+            <button class="sys-btn" id="torrentBtn" onclick="toggleTorrentBlock()">ENFORCE RULE</button>
+        </div>
+        <div class="sys-row">
+            <div>⚡ Automatically Drop Bruteforce Port Scan Attacks</div>
+            <button class="sys-btn active" style="pointer-events: none;">[ ENGAGED ]</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="section-title">🚨 Threat Center Drop Attack Logs</div>
+        <div class="sys-row" style="color: #64748b;"><div id="log1">[07:35:12] IP 185.220.101.44 dropped via automated DDoS Shield core rule.</div></div>
+        <div class="sys-row" style="color: #64748b;"><div>[06:12:44] Unauthorized socket handshake attempt rejected from remote port mapping.</div></div>
+    </div>
+
+    <script>
+        function toggleTorrentBlock() {
+            const btn = document.getElementById('torrentBtn');
+            if(btn.innerText === "ENFORCE RULE") {
+                btn.innerText = "BLOCKING ACTIVE";
+                btn.style.color = "#f87171";
+                alert("DPI Rule Injected: Outgoing client P2P handshake files throttled to 0kbps.");
+            } else {
+                btn.innerText = "ENFORCE RULE";
+                btn.style.color = "#cbd5e1";
+                alert("DPI Filter dropped. P2P sharing unthrottled.");
+            }
+        }
+    </script>
+</body>
+</html>

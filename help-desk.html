@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A24 NOC - Support Help Desk</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #060913; color: #cbd5e1; padding: 16px; min-height: 100vh; padding-bottom: 40px; }
+        header { background-color: #090d1a; border: 1px solid #1e293b; padding: 14px; border-radius: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 18px; font-weight: bold; color: #10b981; text-transform: uppercase; text-decoration: none; }
+        .back-btn { background: #0f172a; border: 1px solid #334155; color: #10b981; font-size: 11px; padding: 8px 14px; border-radius: 6px; cursor: pointer; text-decoration: none; font-weight: bold; text-transform: uppercase; }
+        
+        .card { background: #0f172a; border: 1px solid #1e293b; padding: 16px; border-radius: 12px; margin-bottom: 16px; }
+        .section-title { font-size: 11px; font-weight: bold; text-transform: uppercase; color: #64748b; margin-bottom: 14px; font-family: monospace; tracking: 0.05em; }
+        
+        /* Interactive Row Modules */
+        .ticket-card { background: #020617; border: 1px solid #0f172a; padding: 14px; border-radius: 8px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; position: relative; border-left: 3px solid #f87171; }
+        .ticket-card.resolved { border-left-color: #10b981; opacity: 0.7; }
+        .ticket-header { display: flex; justify-content: space-between; align-items: center; font-family: monospace; font-size: 11px; }
+        .ticket-desc { font-size: 12px; color: #94a3b8; line-height: 1.4; margin: 4px 0; }
+        
+        /* Utility Action Layout Buttons */
+        .btn-rack { display: flex; gap: 6px; margin-top: 4px; }
+        .sys-btn { background: #0f172a; border: 1px solid #334155; color: #cbd5e1; font-family: monospace; font-size: 10px; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
+        .sys-btn.whatsapp { color: #34d399; border-color: rgba(52, 211, 153, 0.2); }
+        .sys-btn.success { color: #10b981; border-color: rgba(16, 185, 129, 0.2); }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="/dashboard" class="logo">A24 HELP DESK</a>
+        <a href="/dashboard" class="back-btn">⬅️ Back Home</a>
+    </header>
+    <!-- 📥 ACTIVE SUPPORT INBOUND TICKETS CARD -->
+    <div class="card">
+        <div class="section-title">📥 Inbound Customer Communications Queue</div>
+        <div id="ticketsQueueRack">
+            
+            <!-- Ticket 1: Active -->
+            <div class="ticket-card" id="ticket-1042">
+                <div class="ticket-header">
+                    <span style="font-weight:bold; color:#f87171;">[Ticket #1042] User: jdoe12</span>
+                    <span id="badge-1042" style="color:#f87171; font-weight:bold;">OPEN CRITICAL</span>
+                </div>
+                <p class="ticket-desc">"Connection drops immediately upon switching network cards from local Wi-Fi router over to mobile carrier data pipelines..."</p>
+                <div class="btn-rack">
+                    <button class="sys-btn" onclick="alert('Querying subscriber metadata maps inside MongoDB Atlas Cluster...')">Diagnose Profile</button>
+                    <button class="sys-btn whatsapp" onclick="window.open('https://wa.me')">💬 WhatsApp</button>
+                    <button class="sys-btn success" id="resolve-btn-1042" onclick="resolveSupportTicket('1042')">✓ Resolve Ticket</button>
+                    <button class="sys-btn" style="color:#f87171; border-color:rgba(239,68,68,0.2);" onclick="deleteTicket('1042')">🗑️ Clear</button>
+                </div>
+            </div>
+
+            <!-- Ticket 2: Simulated Secondary Issue -->
+            <div class="ticket-card" id="ticket-1043" style="border-left-color: #f59e0b;">
+                <div class="ticket-header">
+                    <span style="font-weight:bold; color:#f59e0b;">[Ticket #1043] User: amani_net</span>
+                    <span id="badge-1043" style="color:#f59e0b; font-weight:bold;">PENDING BILLING</span>
+                </div>
+                <p class="ticket-desc">"M-Pesa STK prompt executed successfully, wallet deducted KSh 50, but access token key script generation timed out on my mobile UI window layout..."</p>
+                <div class="btn-rack">
+                    <button class="sys-btn" onclick="alert('Searching transaction ledger hashes on PayHero callback logs...')">Verify Invoice</button>
+                    <button class="sys-btn whatsapp" onclick="window.open('https://wa.me')">💬 WhatsApp</button>
+                    <button class="sys-btn success" id="resolve-btn-1043" onclick="resolveSupportTicket('1043')">✓ Resolve Ticket</button>
+                    <button class="sys-btn" style="color:#f87171; border-color:rgba(239,68,68,0.2);" onclick="deleteTicket('1043')">🗑️ Clear</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <script>
+        // ✓ Handle interactive support ticket resolution state switches
+        function resolveSupportTicket(id) {
+            const card = document.getElementById(`ticket-${id}`);
+            const badge = document.getElementById(`badge-${id}`);
+            const resolveBtn = document.getElementById(`resolve-btn-${id}`);
+            
+            if(card && badge) {
+                card.className = "ticket-card resolved";
+                badge.innerText = "CLOSED RESOLVED";
+                badge.style.color = "#10b981";
+                if(resolveBtn) resolveBtn.remove();
+                alert(`[A24 NOC CENTER] Support Ticket #${id} marked closed. Client diagnostic logs synced as healthy.`);
+            }
+        }
+
+        // 🗑️ Permanent queue clearance controller vector
+        function deleteTicket(id) {
+            if(confirm(`🗑️ Delete Ticket record #${id} permanently from active monitoring buffers?`)) {
+                const targetCard = document.getElementById(`ticket-${id}`);
+                if(targetCard) {
+                    targetCard.remove();
+                    alert(`Support event log safely dropped.`);
+                }
+            }
+        }
+    </script>
+</body>
+</html>

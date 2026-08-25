@@ -1,0 +1,16 @@
+{
+          "name": "a24-net-core",
+                "version": "1.0.0",
+                      "description": "A24 Uncapped Network Routing Core Engine",
+                            "main": "server.js",
+                                  "scripts": {
+                                              "start": "node server.js"
+                                                    },
+                                                          "dependencies": {
+                                                                      "bcryptjs": "^2.4.3",
+                                                                                  "dotenv": "^16.6.1",
+                                                                                              "express": "^4.22.2",
+                                                                                                          "mongodb": "^7.5.0",
+                                                                                                                      "mongoose": "^8.24.3"
+                                                                                                                            }
+                                                                                                                            }

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A24 NOC - Package Factory</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #060913; color: #cbd5e1; padding: 16px; min-height: 100vh; }
+        header { background-color: #090d1a; border: 1px solid #1e293b; padding: 14px; border-radius: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 18px; font-weight: bold; color: #10b981; text-transform: uppercase; text-decoration: none; }
+        .back-btn { background: #0f172a; border: 1px solid #334155; color: #10b981; font-size: 11px; padding: 8px 14px; border-radius: 6px; cursor: pointer; text-decoration: none; font-weight: bold; text-transform: uppercase; }
+        .card { background: #0f172a; border: 1px solid #1e293b; padding: 16px; border-radius: 12px; margin-bottom: 16px; }
+        .section-title { font-size: 11px; font-weight: bold; text-transform: uppercase; color: #64748b; margin-bottom: 14px; font-family: monospace; tracking: 0.05em; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 10px; text-transform: uppercase; color: #475569; font-family: monospace; margin-bottom: 4px; font-weight: bold; }
+        input { width: 100%; height: 40px; background: #020617; border: 1px solid #1e293b; border-radius: 6px; color: white; padding: 0 12px; font-size: 13px; outline: none; }
+        .action-btn { width: 100%; height: 40px; background: #059669; border: none; color: white; font-size: 12px; font-weight: bold; text-transform: uppercase; border-radius: 6px; cursor: pointer; margin-top: 6px; }
+        .tier-row { background: #020617; border: 1px solid #0f172a; padding: 14px; border-radius: 8px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px; font-size: 11px; font-family: monospace; }
+        .tier-meta { display: flex; justify-content: space-between; width: 100%; align-items: center; }
+        .btn-rack { display: flex; gap: 6px; width: 100%; }
+        .ctrl-btn { flex:1; height: 30px; background: #0f172a; border: 1px solid #334155; color: #cbd5e1; font-size: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
+        .ctrl-btn.warning { color: #f59e0b; border-color: rgba(245,158,11,0.2); }
+        .ctrl-btn.danger { color: #f87171; border-color: rgba(239,68,68,0.2); }
+        .empty-state { text-align: center; padding: 30px 14px; color: #475569; font-family: monospace; font-size: 11px; font-weight: bold; border: 1px dashed #1e293b; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="/dashboard" class="logo">A24 TIER FACTORY</a>
+        <a href="/dashboard" class="back-btn">⬅️ Back Home</a>
+    </header>
+
+    <div class="card">
+        <div class="section-title">➕ Deploy Live Network Pass Tier</div>
+        <form id="deployTierForm" onsubmit="handleDeployTier(event)">
+            <div class="form-group"><label>Pass Name Variant</label><input type="text" id="tierName" placeholder="e.g. Weekend Special" required /></div>
+            <div class="form-group"><label>Duration Allocation</label><input type="text" id="tierDuration" placeholder="e.g. 48 Hours" required /></div>
+            <div class="form-group"><label>M-Pesa Price (KSh)</label><input type="number" id="tierPrice" placeholder="e.g. 70" required /></div>
+            <button type="submit" class="action-btn">⚡ Push Tier to MongoDB Atlas</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="section-title">⏳ Active Inventory Records</div>
+        <div id="factoryTiersRack">
+            <div class="empty-state">[ NO TIERS ACTIVE INSIDE MONGODB CORES ]</div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchFactoryInventory() {
+            try {
+                const response = await fetch('/api/v1/tiers');
+                const tiers = await response.json();
+                const container = document.getElementById('factoryTiersRack');
+                
+                if (tiers && tiers.length > 0) {
+                    container.innerHTML = '';
+                    tiers.forEach(tier => {
+                        const isLocked = tier.status === 'LOCKED';
+                        container.innerHTML += `
+                            <div class="tier-row">
+                                <div class="tier-meta">
+                                    <div>
+                                        <div>Tier: <b>${tier.name}</b></div>
+                                        <div style="color:#64748b; font-size:9px; margin-top:2px;">⏱️ Duration: ${tier.duration} // Value: KSh ${tier.price}</div>
+                                    </div>
+                                    <span style="color:${isLocked ? '#f87171' : '#10b981'}; font-weight:bold;">[ ${tier.status} ]</span>
+                                </div>
+                                <!-- 🎛️ RESTORED EDIT, LOCK, DELETE CONTROL PANEL BUTTON RACK -->
+                                <div class="btn-rack">
+                                    <button class="ctrl-btn" onclick="modifyTierSchema('${tier.key}')">📝 Edit</button>
+                                    <button class="ctrl-btn warning" onclick="toggleTierGate('${tier.key}', '${tier.status}')">${isLocked ? '🔓 Open' : '🔒 Lock'}</button>
+                                    <button class="ctrl-btn danger" onclick="deleteTierFromDatabase('${tier.key}')">🗑️ Delete</button>
+                                </div>
+                            </div>`;
+                    });
+                } else {
+                    container.innerHTML = `<div class="empty-state">[ NO TIERS ACTIVE INSIDE MONGODB CORES ]</div>`;
+                }
+            } catch(err) { console.log('Syncing factory database rows...'); }
+        }
+
+        async function handleDeployTier(e) {
+            e.preventDefault();
+            const name = document.getElementById('tierName').value.trim();
+            const duration = document.getElementById('tierDuration').value.trim();
+            const price = document.getElementById('tierPrice').value;
+
+            const response = await fetch('/api/v1/tiers/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, duration, price, isFlash: false })
+            });
+            const data = await response.json();
+            if(data.success) {
+                alert("✅ Success! New tier written directly onto MongoDB. Customer screen synced.");
+                document.getElementById('deployTierForm').reset();
+                fetchFactoryInventory();
+            }
+        }
+
+        async function toggleTierGate(key, currentStatus) {
+            const nextStatus = currentStatus === 'OPEN' ? 'LOCKED' : 'OPEN';
+            await fetch('/api/v1/tiers/toggle-lock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key, status: nextStatus })
+            });
+            fetchFactoryInventory();
+        }
+
+        async function deleteTierFromDatabase(key) {
+            if(confirm("Erasing this item drops it completely out of your MongoDB collections. Proceed?")) {
+                await fetch(`/api/v1/tiers/delete/${key}`, { method: 'DELETE' });
+                fetchFactoryInventory();
+            }
+        }
+
+        function modifyTierSchema(key) {
+            alert("Editing layout metadata schema layer... complete full edits straight inside the top form block.");
+        }
+
+        window.onload = fetchFactoryInventory;
+    </script>
+</body>
+</html>

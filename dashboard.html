@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A24 NOC - Master operations Cockpit</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #060913; color: #cbd5e1; min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
+        
+        /* 📐 MIN-MINT RESPONSIVE FLEX POSITIONING FOR SPLIT HEADING LOGS */
+        header { background-color: rgba(15, 23, 42, 0.95); border-bottom: 1px solid #1e293b; height: 64px; display: flex; align-items: center; justify-content: flex-start; padding: 0 16px; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(12px); width: 100%; gap: 14px; }
+        .logo-box { display: flex; align-items: center; gap: 14px; width: 100%; }
+        .brand-text { font-size: 19px; font-weight: 900; color: #10b981; text-transform: uppercase; letter-spacing: 0.5px; font-family: monospace; line-height: 1.2; }
+        .noc-badge { font-size: 11px; color: #10b981; font-family: monospace; font-weight: bold; display: block; line-height: 1.2; margin-top: 1px; opacity: 0.85; }
+        .hamburger-btn { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; font-size: 22px; width: 44px; height: 44px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        
+        .main-container { display: flex; flex: 1; position: relative; min-height: calc(100vh - 120px); }
+        aside { width: 260px; background-color: #090d1a; border-right: 1px solid #1e293b; padding: 16px; display: none; flex-direction: column; position: fixed; top: 120px; bottom: 0; left: 0; z-index: 99; height: calc(100vh - 64px); overflow-y: auto; }
+        .nav-section { margin-bottom: 20px; }
+        .section-label { font-size: 10px; font-family: monospace; text-transform: uppercase; color: #475569; display: block; margin-bottom: 8px; padding-left: 8px; }
+        nav { display: flex; flex-direction: column; gap: 4px; }
+        nav a { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; color: #94a3b8; text-decoration: none; font-size: 13px; font-weight: 500; }
+        nav a.active { background-color: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); font-weight: 600; }
+        main { flex: 1; padding: 16px; width: 100%; }
+        .metrics { display: grid; grid-template-cols: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .pill { background-color: #0f172a; border: 1px solid #1e293b; padding: 12px; border-radius: 12px; text-align: center; }
+        .p-label { font-size: 10px; color: #475569; text-transform: uppercase; font-family: monospace; margin-bottom: 4px; }
+        .p-val { font-size: 16px; font-weight: bold; color: #cbd5e1; }
+        .card { background: rgba(15, 23, 42, 0.6); border: 1px solid #1e293b; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+        input { width:100%; height:34px; background:#020617; border:1px solid #1e293b; border-radius:6px; color:white; padding:0 10px; font-size:12px; outline:none; }
+        input:focus { border-color:#10b981; }
+        @media (min-width: 1024px) {
+            aside { display: flex !important; position: sticky; top: 64px; height: calc(100vh - 64px); }
+            main { margin-left: 0; }
+            .hamburger-btn { display: none; }
+            header { justify-content: flex-start; }
+            .logo-box { width: auto; }
+        }
+    
+        /* 🚨 Network Diagnostics Real-Time Layout Matrix */
+        .diag-grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 16px; }
+        @media(min-width: 768px) { .diag-grid { grid-template-columns: repeat(2, 1fr); } }
+        .diag-card { background: #020617; border: 1px dashed #1e293b; padding: 14px; border-radius: 10px; font-family: monospace; font-size: 11px; }
+        .diag-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid #0f172a; }
+        .diag-title { color: #64748b; font-weight: bold; text-transform: uppercase; font-size: 10px; }
+        .diag-metric { font-size: 16px; font-weight: bold; color: #10b981; margin: 4px 0; }
+        .graph-mock-container { height: 40px; display: flex; align-items: flex-end; gap: 2px; margin-top: 8px; background: rgba(15,23,42,0.4); padding: 4px; border-radius: 4px; }
+        .graph-bar { flex: 1; background: #059669; min-height: 4px; border-radius: 1px; transition: height 0.3s ease; }
+        .log-row { display: flex; justify-content: space-between; padding: 4px 0; color: #cbd5e1; border-bottom: 1px solid rgba(30,41,59,0.3); }
+        .log-timestamp { color: #475569; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo-box">
+            <button id="menuToggleBtn" class="hamburger-btn">≡</button>
+            <div class="logo-group" style="display: flex; flex-direction: column; align-items: flex-start; justify-content: center;">
+                <div class="brand-text">TRADEFINIXS</div>
+                <div class="noc-badge">A24 NOC</div>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <aside id="sidebarMenu">
+            <div class="nav-section">
+                <span class="section-label">Operations Hub</span>
+                <nav>
+                    <a href="#" class="active">🏠 Dashboard Home</a>
+                    <a href="/user-vault">👤 User Vault</a>
+                    <a href="/package-factory">⏳ Package Factory</a>
+                    <a href="/payment-ledger">📜 Payment Ledger</a>
+                    <a href="/help-desk">📥 Support Help Desk</a>
+                </nav>
+            </div>
+<div class="nav-section">
+                <span class="section-label">Infrastructure NOC</span>
+                <nav>
+                    <a href="/firewall">🛡️ Firewall & Tunnels</a>
+                    <a href="/vps">🖥️ Cloud Engine</a>
+                    <a href="/mikrotik">📶 MikroTik Nodes</a>
+                </nav>
+            </div>
+        </aside>
+
+        <main>
+            
+            <!-- 🟢 LIVE CORE TELEMETRY STATUS SYSTEM INTEGRATION -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                <div style="background: #090d1a; border: 1px solid #1e293b; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 10px; display: flex; align-items: center; gap: 8px;">
+                    <span style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; display: inline-block; box-shadow: 0 0 8px #10b981;"></span>
+                    <span style="color: #64748b; text-transform: uppercase; font-weight: bold;">DB:</span>
+                    <span style="color: #cbd5e1; font-weight: bold;">MONGO ATLAS CONNECTED</span>
+                </div>
+                <div style="background: #090d1a; border: 1px solid #1e293b; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 10px; display: flex; align-items: center; gap: 8px;">
+                    <span id="wgStatusDot" style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; display: inline-block; box-shadow: 0 0 8px #10b981;"></span>
+                    <span style="color: #64748b; text-transform: uppercase; font-weight: bold;">TUNNEL:</span>
+                    <span id="wgStatusText" style="color: #cbd5e1; font-weight: bold;">VPS + WIREGUARD LIVE</span>
+                </div>
+            </div>
+<div class="metrics">
+                <div class="pill"><div class="p-label">Total Revenue</div><div class="p-val" style="color:#10b981; font-weight:bold;" id="revenueMetric">KSh 0</div></div>
+                <div class="pill"><div class="p-label">Active Tunnels</div><div class="p-val" id="tunnelsMetric">0 Online</div></div>
+            </div>
+
+            <!-- 🛠️ RESTORED SUPPORT UI CONFIGURATION FORM CARD -->
+            <div class="card">
+                <h3 style="font-size:12px; font-weight:600; text-transform:uppercase; color:#64748b; margin-bottom:12px; font-family:monospace;">🛠️ Global Infrastructure Asset Variables</h3>
+                <form id="adminGlobalSettingsForm" onsubmit="saveGlobalSettings(event)">
+                    <div style="margin-bottom:10px;">
+                        <label style="display:block; font-size:9px; font-family:monospace; color:#475569; text-transform:uppercase; font-weight:bold; margin-bottom:2px;">Custom Client Android APK Download URL</label>
+                        <input type="text" id="setApkLink" />
+                    </div>
+                    <div style="margin-bottom:10px;">
+                        <label style="display:block; font-size:9px; font-family:monospace; color:#475569; text-transform:uppercase; font-weight:bold; margin-bottom:2px;">Portal Front Store Share Link</label>
+                        <input type="text" id="setPortalLink" />
+                    </div>
+                    <div style="margin-bottom:10px;">
+                        <label style="display:block; font-size:9px; font-family:monospace; color:#475569; text-transform:uppercase; font-weight:bold; margin-bottom:2px;">Support Core WhatsApp Link API</label>
+                        <input type="text" id="setWhatsAppLink" />
+                    </div>
+                    <div style="margin-bottom:12px;">
+                        <label style="display:block; font-size:9px; font-family:monospace; color:#475569; text-transform:uppercase; font-weight:bold; margin-bottom:2px;">Direct Voice Call Support Number</label>
+                        <input type="text" id="setCallNum" />
+                    </div>
+                    <button type="submit" style="width:100%; height:36px; background:#059669; border:none; color:white; font-size:11px; font-weight:bold; text-transform:uppercase; border-radius:6px; cursor:pointer;">💾 Commit and Push System Links</button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.getElementById('menuToggleBtn').addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebarMenu');
+            sidebar.style.display = sidebar.style.display === 'flex' ? 'none' : 'flex';
+        });
+
+        async function fetchMetrics() {
+            try {
+const response = await fetch('/api/v1/system-stats');
+                const data = await response.json();
+                document.getElementById('revenueMetric').innerText = 'KSh ' + data.revenue;
+                document.getElementById('tunnelsMetric').innerText = data.activeTunnels + ' Online';
+                
+                // Dynamic WireGuard kernel checking logic
+                const wgDot = document.getElementById('wgStatusDot');
+                const wgText = document.getElementById('wgStatusText');
+                if (data.activeTunnels > 0) {
+                    wgDot.style.background = '#10b981';
+                    wgDot.style.boxShadow = '0 0 10px #10b981';
+                    wgText.innerText = 'VPS + WIREGUARD [ACTIVE]';
+                    wgText.style.color = '#10b981';
+                } else {
+                    wgDot.style.background = '#f59e0b';
+                    wgDot.style.boxShadow = '0 0 10px #f59e0b';
+                    wgText.innerText = 'VPS + WIREGUARD [IDLE]';
+                    wgText.style.color = '#cbd5e1';
+                }
+            } catch (err) { console.log('Overview metrics issue...'); }
+        }
+
+        async function fetchAdminSettingsVariables() {
+            try {
+                const response = await fetch('/api/v1/settings');
+                const config = await response.json();
+                document.getElementById('setApkLink').value = config.apkDownloadLink;
+                document.getElementById('setPortalLink').value = config.portalShareLink;
+                document.getElementById('setWhatsAppLink').value = config.supportWhatsAppLink;
+                document.getElementById('setCallNum').value = config.supportCallNumber;
+            } catch(err) { console.log('Settings loading error.'); }
+        }
+        
+        async function saveGlobalSettings(e) {
+            e.preventDefault();
+            const apkDownloadLink = document.getElementById('setApkLink').value.trim();
+            const portalShareLink = document.getElementById('setPortalLink').value.trim();
+            const supportWhatsAppLink = document.getElementById('setWhatsAppLink').value.trim();
+            const supportCallNumber = document.getElementById('setCallNum').value.trim();
+            
+            const response = await fetch('/api/v1/settings/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ apkDownloadLink, portalShareLink, supportWhatsAppLink, supportCallNumber })
+            });
+            const data = await response.json();
+            if(data.success) { alert("✅ Success! Global asset links updated in MongoDB Atlas. Customer portals synced live."); }
+        }
+        
+        window.onload = () => { fetchMetrics(); fetchAdminSettingsVariables(); };
+    </script>
+</body>
+</html>

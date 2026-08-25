@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A24 NOC - Payment Ledger</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #060913; color: #cbd5e1; padding: 12px; min-height: 100vh; padding-bottom: 40px; }
+        
+        /* 🔝 Header & Title Sections on top */
+        header { background-color: #090d1a; border: 1px solid #1e293b; padding: 14px; border-radius: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 16px; font-weight: bold; color: #10b981; text-transform: uppercase; text-decoration: none; font-family: monospace; }
+        .back-btn { background: #0f172a; border: 1px solid #334155; color: #10b981; font-size: 11px; padding: 8px 14px; border-radius: 6px; cursor: pointer; text-decoration: none; font-weight: bold; text-transform: uppercase; }
+        
+        .card { background: #0f172a; border: 1px solid #1e293b; padding: 14px; border-radius: 12px; }
+        .section-title { font-size: 12px; font-weight: bold; text-transform: uppercase; color: #10b981; margin-bottom: 12px; font-family: monospace; tracking: 0.05em; border-bottom: 1px solid #1e293b; padding-bottom: 8px; }
+        
+        .search-container { margin-bottom: 14px; }
+        input { width: 100%; height: 40px; background: #020617; border: 1px solid #1e293b; border-radius: 8px; color: white; padding: 0 12px; font-size: 13px; outline: none; }
+        input:focus { border-color: #10b981; }
+        
+        /* 📊 Responsive Spreadsheet Data Table Grid */
+        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; border: 1px solid #1e293b; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-family: monospace; font-size: 11px; background: #020617; }
+        
+        /* 🔝 Headings strictly on top row */
+        th { background-color: #090d1a; color: #64748b; font-weight: bold; text-transform: uppercase; padding: 10px; border-bottom: 2px solid #1e293b; font-size: 10px; white-space: nowrap; }
+        td { padding: 10px; border-bottom: 1px solid #0f172a; color: #cbd5e1; white-space: nowrap; vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        
+        .status-pending { color: #f59e0b; font-weight: bold; }
+        .action-btn { height: 26px; background: #0f172a; border: 1px solid #ef4444; color: #f87171; font-size: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; text-transform: uppercase; padding: 0 8px; display: flex; align-items: center; justify-content: center; }
+        .empty-state { text-align: center; padding: 30px 14px; color: #475569; font-family: monospace; font-size: 11px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="/dashboard" class="logo">A24 CENTRAL LEDGER</a>
+        <a href="/dashboard" class="back-btn">⬅️ Back Home</a>
+    </header>
+    <div class="card">
+        <!-- Main Heading On Top -->
+        <div class="section-title">📜 PayHero Kenya Transaction Table Matrix</div>
+        
+        <div class="search-container">
+            <input type="text" id="ledgerSearchInput" placeholder="Filter table by Transaction ID, Phone or Pass profile..." oninput="filterLedgerTable()" />
+        </div>
+
+        <div class="table-responsive">
+            <table id="ledgerTable">
+                <thead>
+                    <tr>
+                        <th>Transaction ID</th>
+                        <th>Pass Tier</th>
+                        <th>Phone Node</th>
+                        <th>Date & Time</th>
+                        <th>State</th>
+                        <th>Time Remaining</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="ledgerTableBody">
+                    <!-- Row 1 Baseline Data Card with Live Expiration Counter Loop -->
+                    <tr id="row-id-01">
+                        <td class="search-target" style="font-weight: bold; color: #f1f5f9;">PHK-QW892L10</td>
+                        <td class="search-target" style="color: #f59e0b;">Hours Unlimited</td>
+                        <td class="search-target" style="color: #10b981;">0712345678</td>
+                        <td class="search-target">18-Aug-2026 // 02:42 PM</td>
+                        <td><span class="status-badge status-pending" id="state-badge-01" style="font-size:10px;">PENDING</span></td>
+                        <!-- ⏳ Active Countdown Node Element Grid -->
+                        <td style="font-family: monospace; font-weight: bold; color: #f59e0b;" id="countdown-timer-01">00:00:15</td>
+                        <td><button class="action-btn" onclick="dropTableRecord('row-id-01', 'PHK-QW892L10')">🗑️ Delete</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // 🔍 High-Performance Table Row Filtering Matrix
+        function filterLedgerTable() {
+            const query = document.getElementById('ledgerSearchInput').value.trim().toLowerCase();
+            const rows = document.querySelectorAll('#ledgerTableBody tr');
+            let matchedItems = 0;
+
+            rows.forEach(row => {
+                const textCells = row.innerText.toLowerCase();
+                if (textCells.includes(query)) {
+                    row.style.display = '';
+                    matchedItems++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Handle temporary empty layouts placeholders
+            const oldMsg = document.getElementById('tableFilterEmptyMsg');
+            if (matchedItems === 0 && !oldMsg) {
+                document.getElementById('ledgerTableBody').insertAdjacentHTML('afterend', `<div id="tableFilterEmptyMsg" class="empty-state">[ MATCHING RECORDS NOT FOUND ]</div>`);
+            } else if (matchedItems > 0 && oldMsg) {
+                oldMsg.remove();
+            }
+        }
+
+        // 🗑️ Handle explicit row data excision out of local spreadsheet array
+        function dropTableRecord(rowId, refCode) {
+            if (confirm(`🗑️ Delete transaction record row [ ${refCode} ] permanently from storage matrices?`)) {
+                const targetRow = document.getElementById(rowId);
+                if (targetRow) {
+                    targetRow.remove();
+                    alert(`Record [ ${refCode} ] destroyed successfully.`);
+                    
+                    const cells = document.querySelectorAll('#ledgerTableBody tr');
+                    if (cells.length === 0) {
+                        document.querySelector('.table-responsive').innerHTML = '<div class="empty-state">[ NO INVOICES RECORDED INSIDE DATABASE SECTIONS ]</div>';
+                    }
+                }
+            }
+        }
+    
+        // ⏳ FINANCIAL AUDIT TIMER COUNTDOWN MATRIX LOGGER ENGINE
+        let activeLedgerSecondsRemaining = 15; // Set to 15 seconds for local developer sprint testing validation loops
+        
+        const ledgerClockCountdownIntervalId = setInterval(() => {
+            const timerDisplayNode = document.getElementById('countdown-timer-01');
+            const statusBadgeNode = document.getElementById('state-badge-01');
+            
+            if (!timerDisplayNode) {
+                clearInterval(ledgerClockCountdownIntervalId);
+                return;
+            }
+
+            if (activeLedgerSecondsRemaining <= 0) {
+                clearInterval(ledgerClockCountdownIntervalId);
+                timerDisplayNode.innerText = "00:00:00";
+                timerDisplayNode.style.color = "#ef4444";
+                
+                // Transformation Rule: Switch elements natively to a expired cutoff flag alert state instantly
+                if (statusBadgeNode) {
+                    statusBadgeNode.innerText = "EXPIRED";
+                    statusBadgeNode.style.background = "rgba(239, 68, 68, 0.1)";
+                    statusBadgeNode.style.color = "#ef4444";
+                    statusBadgeNode.style.border = "1px solid rgba(239, 68, 68, 0.2)";
+                }
+                console.log('[A24-LEDGER] Target transaction lease duration interval has expired natively.');
+                return;
+            }
+
+            activeLedgerSecondsRemaining--;
+            
+            // Format time parameters cleanly into standard accounting clock structures (HH:MM:SS)
+            const hours = Math.floor(activeLedgerSecondsRemaining / 3600).toString().padStart(2, '0');
+            const minutes = Math.floor((activeLedgerSecondsRemaining % 3600) / 60).toString().padStart(2, '0');
+            const seconds = (activeLedgerSecondsRemaining % 60).toString().padStart(2, '0');
+            
+            timerDisplayNode.innerText = `${hours}:${minutes}:${seconds}`;
+        }, 1000);
+
+</script>
+</body>
+</html>

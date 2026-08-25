@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>A24 Custom Client APK Simulator</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #060913; color: #cbd5e1; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; overflow-x: hidden; }
+        .phone-shell { width: 100%; max-width: 360px; height: 720px; background: #090d1a; border: 12px solid #1e293b; border-radius: 40px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .phone-notch { width: 140px; height: 24px; background: #1e293b; position: absolute; top: 0; left: 50%; transform: translateX(-50%); border-bottom-left-radius: 14px; border-bottom-right-radius: 14px; z-index: 100; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .notch-camera { width: 8px; height: 8px; background: #060913; border-radius: 50%; }
+        .notch-speaker { width: 40px; height: 4px; background: #0f172a; border-radius: 2px; }
+        .apk-screen { flex: 1; padding: 40px 16px 20px 16px; display: none; flex-direction: column; justify-content: space-between; position: relative; }
+        .apk-screen.active { display: flex; }
+        .brand-header { text-align: center; margin-top: 40px; margin-bottom: 20px; }
+        .brand-title { font-size: 24px; font-weight: 900; color: #10b981; text-transform: uppercase; letter-spacing: -0.5px; }
+        .brand-tag { font-size: 10px; color: #64748b; font-family: monospace; text-transform: uppercase; letter-spacing: 0.05em; font-weight: bold; margin-top: 2px; }
+        .form-card { background: rgba(15,23,42,0.6); border: 1px solid #1e293b; border-radius: 16px; padding: 20px; margin-top: 20px; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 10px; text-transform: uppercase; color: #475569; font-family: monospace; font-weight: bold; margin-bottom: 4px; }
+        input { width: 100%; height: 44px; background: #020617; border: 1px solid #1e293b; border-radius: 8px; color: white; padding: 0 12px; font-size: 13px; outline: none; }
+        .apk-btn { width: 100%; height: 46px; background-color: #059669; color: white; border: none; border-radius: 8px; font-size: 12px; font-weight: bold; text-transform: uppercase; cursor: pointer; letter-spacing: 0.03em; }
+        .telemetry-row { background: #020617; border: 1px solid #1e293b; padding: 8px 12px; border-radius: 8px; font-family: monospace; font-size: 10px; display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+        .telemetry-label { color: #475569; text-transform: uppercase; font-weight: bold; }
+        .telemetry-value { color: #cbd5e1; font-weight: bold; }
+        .activation-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 40px 0; }
+        .actuator-ring { width: 180px; height: 180px; background: #0c1124; border: 4px solid #ef4444; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; box-shadow: 0 0 25px rgba(239,68,68,0.15); transition: all 0.4s ease; }
+        .actuator-ring.connected { border-color: #10b981; box-shadow: 0 0 35px rgba(16,185,129,0.3); background: rgba(16,185,129,0.02); }
+        .actuator-icon { font-size: 32px; margin-bottom: 4px; }
+        .actuator-status { font-family: monospace; font-size: 11px; font-weight: bold; color: #f87171; text-transform: uppercase; letter-spacing: 0.05em; }
+        .actuator-ring.connected .actuator-status { color: #10b981; }
+        .timer-card { background: #020617; border: 1px solid #1e293b; border-radius: 12px; padding: 12px; text-align: center; width: 100%; font-family: monospace; margin-bottom: 16px; }
+        .timer-display { font-size: 26px; font-weight: bold; color: #94a3b8; letter-spacing: 1px; margin: 2px 0; }
+        .timer-card.active .timer-display { color: #f59e0b; }
+        .market-card { background: rgba(15,23,42,0.8); border: 1px solid #1e293b; border-radius: 14px; padding: 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .market-name { font-size: 14px; font-weight: bold; color: #f1f5f9; }
+        .market-desc { font-size: 10px; color: #475569; font-family: monospace; margin-top: 1px; }
+        .market-price { font-size: 15px; font-weight: bold; color: #10b981; font-family: monospace; margin-bottom: 4px; text-align: right; }
+        .market-buy-btn { background: #0f172a; border: 1px solid #334155; color: #cbd5e1; font-size: 9px; font-weight: bold; text-transform: uppercase; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+        .apk-navigation { width: 100%; height: 56px; background: #090d1a; border-top: 1px solid #111827; display: none; align-items: center; justify-content: space-around; }
+        .apk-navigation.visible { display: flex; }
+        .nav-item { background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 2px; color: #334155; font-size: 9px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-family: monospace; width: 33%; height: 100%; justify-content: center; }
+        .nav-item.active { color: #10b981; }
+        .nav-icon { font-size: 16px; }
+    </style>
+</head>
+<body>
+    <div class="phone-shell">
+        <div class="phone-notch"><div class="notch-speaker"></div><div class="notch-camera"></div></div>
+
+        <!-- SCREEN 1: VERIFICATION SCREEN -->
+        <div id="screen-auth" class="apk-screen active">
+            <div>
+                <div class="brand-header">
+                    <h1 class="brand-title">A24 Net</h1>
+                    <div class="brand-tag">Premium Hotspot Client</div>
+                </div>
+                <div class="form-card">
+                    <div class="form-group"><label>Account Username</label><input type="text" id="apkUsername" /></div>
+                    <div class="form-group"><label>Profile Password</label><input type="password" id="apkPassword" /></div>
+                    <button class="apk-btn" onclick="executeApkAuthHandshake()">🔐 Authenticate Client</button>
+                </div>
+            </div>
+            <div style="text-align: center; font-size: 9px; font-family: monospace; color: #334155;">🛡️ Hardware Lock Active: Session binds to current device signature.</div>
+        </div>
+
+        <!-- SCREEN 2: MAIN ACTUATOR CONTROL POINT -->
+        <div id="screen-connect" class="apk-screen">
+            <div>
+                <div class="telemetry-row"><span class="telemetry-label">👤 User Node:</span><span class="telemetry-value" id="telemetryUser">ANONYMOUS</span></div>
+                <div class="telemetry-row"><span class="telemetry-label">🔒 Device Match:</span><span class="telemetry-value" style="color:#10b981;">HARDWARE BOUND</span></div>
+            </div>
+            <div class="activation-wrapper">
+                <div id="actuatorButton" class="actuator-ring" onclick="toggleWireguardTunnelState()">
+                    <span id="actuatorIcon" class="actuator-icon">🔴</span><span id="actuatorText" class="actuator-status">Not Connected</span>
+                </div>
+                <div id="tunnelPulseMsg" style="font-family: monospace; font-size:9px; color:#475569; text-transform:uppercase; margin-top:14px; font-weight:bold;">Tap ring to route hotspot</div>
+            </div>
+            <div id="timerCardContainer" class="timer-card">
+                <span class="telemetry-label" style="font-size:9px; display:block;">⏱️ Session Remaining Balance</span>
+                <div id="clockDisplay" class="timer-display">00:00:00</div>
+            </div>
+        </div>
+
+        <!-- SCREEN 3: REAL-TIME LEDGER MARKETPLACE -->
+        <div id="screen-market" class="apk-screen">
+            <div>
+                <div class="brand-header" style="margin-top:10px; text-align:left;"><span class="brand-tag" style="color:#10b981;">Inventory Stream</span><h2 style="font-size:16px; color:#f1f5f9;">Internet Passes</h2></div>
+                <div id="apkTiersContainer" style="margin-top:14px;"></div>
+            </div>
+        </div>
+
+        <footer-nav id="apkBottomBar" class="apk-navigation">
+            <button class="nav-item active" id="navItem-connect" onclick="switchApkTab('connect')"><span class="nav-icon">📡</span><span>Link</span></button>
+            <button class="nav-item" id="navItem-market" onclick="switchApkTab('market')"><span class="nav-icon">💳</span><span>Passes</span></button>
+            <button class="nav-item" style="color:#f87171;" onclick="executeApkSignoutPurge()"><span class="nav-icon">🚫</span><span>Exit</span></button>
+        </footer-nav>
+    </div>
+    <script>
+        let currentAuthenticatedUser = null;
+        let activeCountdownDurationSeconds = 0;
+        let clockIntervalTimerId = null;
+
+        async function executeApkAuthHandshake() {
+            const usernameInput = document.getElementById('apkUsername').value.trim().toLowerCase();
+            if(!usernameInput) { alert("⚠️ Username input required."); return; }
+            try {
+                const response = await fetch(`/api/v1/users/status/${usernameInput}`);
+                if(response.status === 404) { alert("❌ Profile name does not exist inside the database ranks. Create it on store front first."); return; }
+                currentAuthenticatedUser = usernameInput;
+                document.getElementById('telemetryUser').innerText = usernameInput.toUpperCase();
+                document.getElementById('screen-auth').classList.remove('active');
+                document.getElementById('screen-connect').classList.add('active');
+                document.getElementById('apkBottomBar').classList.add('visible');
+                syncApkMarketTiers();
+            } catch(err) { alert("Handshake timed out."); }
+        }
+
+        async function toggleWireguardTunnelState() {
+            const ring = document.getElementById('actuatorButton');
+            const icon = document.getElementById('actuatorIcon');
+            const text = document.getElementById('actuatorText');
+            const msg = document.getElementById('tunnelPulseMsg');
+            if(!ring.classList.contains('connected')) {
+                const response = await fetch(`/api/v1/users/status/${currentAuthenticatedUser}`);
+                const data = await response.json();
+                if(data.user && data.user.status === 'active') {
+                    ring.classList.add('connected'); icon.innerText = "🟢"; text.innerText = "Link Active";
+                    msg.innerText = "CONNECTED // SPEED UNCAPPED"; msg.style.color = "#10b981";
+                    document.getElementById('timerCardContainer').classList.add('active');
+                    triggerMockApkClockCountdown(12 * 3600);
+                } else { alert("❌ Access Denied: Profile is disabled on admin User Vault. Connect it first!"); }
+            } else {
+                ring.classList.remove('connected'); icon.innerText = "🔴"; text.innerText = "Not Connected";
+                msg.innerText = "Tap ring to route hotspot"; msg.style.color = "#475569";
+                document.getElementById('timerCardContainer').classList.remove('active');
+                clearInterval(clockIntervalTimerId); document.getElementById('clockDisplay').innerText = "00:00:00";
+            }
+        }
+
+        function triggerMockApkClockCountdown(seconds) {
+            clearInterval(clockIntervalTimerId); activeCountdownDurationSeconds = seconds;
+            clockIntervalTimerId = setInterval(() => {
+                if(activeCountdownDurationSeconds <= 0) { clearInterval(clockIntervalTimerId); return; }
+                activeCountdownDurationSeconds--;
+                const h = Math.floor(activeCountdownDurationSeconds / 3600).toString().padStart(2, '0');
+                const m = Math.floor((activeCountdownDurationSeconds % 3600) / 60).toString().padStart(2, '0');
+                const s = (activeCountdownDurationSeconds % 60).toString().padStart(2, '0');
+                document.getElementById('clockDisplay').innerText = `${h}:${m}:${s}`;
+            }, 1000);
+        }
+
+        async function syncApkMarketTiers() {
+            try {
+                const response = await fetch('/api/v1/tiers');
+                const tiers = await response.json();
+                const container = document.getElementById('apkTiersContainer');
+                container.innerHTML = '';
+                if(tiers && tiers.length > 0) {
+                    tiers.forEach(tier => {
+                        if(tier.status === 'OPEN') {
+                            container.innerHTML += `
+                                <div class="market-card">
+                                    <div><div class="market-name">${tier.name}</div><div class="market-desc">⏱️ Duration: ${tier.duration}</div></div>
+                                    <div style="text-align:right;"><div class="market-price">KSh ${tier.price}</div><button class="market-buy-btn" onclick="alert('STK Dispatched.')">Buy</button></div>
+                                </div>`;
+                        }
+                    });
+                } else { container.innerHTML = '<div class="empty-state">[ NO PASSES DEPLOYED BY NOC ]</div>'; }
+            } catch(err) { console.log('Syncing tiers...'); }
+        }
+
+        function switchApkTab(targetScreen) {
+            document.querySelectorAll('.apk-screen').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.getElementById(`screen-${targetScreen}`).classList.add('active');
+            document.getElementById(`navItem-${targetScreen}`).classList.add('active');
+        }
+
+        function executeApkSignoutPurge() {
+            currentAuthenticatedUser = null; clearInterval(clockIntervalTimerId);
+            document.getElementById('screen-connect').classList.remove('active');
+            document.getElementById('screen-market').classList.remove('active');
+            document.getElementById('apkBottomBar').classList.remove('visible');
+            document.getElementById('screen-auth').classList.add('active');
+        }
+    </script>
+</body>
+</html>

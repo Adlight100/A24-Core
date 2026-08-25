@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A24 NOC - User Vault</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #060913; color: #cbd5e1; padding: 16px; min-height: 100vh; }
+        header { background-color: #090d1a; border: 1px solid #1e293b; padding: 14px; border-radius: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 18px; font-weight: bold; color: #10b981; text-transform: uppercase; text-decoration: none; }
+        .back-btn { background: #0f172a; border: 1px solid #334155; color: #10b981; font-size: 11px; padding: 8px 14px; border-radius: 6px; cursor: pointer; text-decoration: none; font-weight: bold; text-transform: uppercase; }
+        .card { background: #0f172a; border: 1px solid #1e293b; padding: 16px; border-radius: 12px; }
+        .section-title { font-size: 11px; font-weight: bold; text-transform: uppercase; color: #64748b; margin-bottom: 12px; font-family: monospace; tracking: 0.05em; }
+        
+        /* 🔍 Search Input Container Box */
+        .search-container { display: flex; gap: 8px; margin-bottom: 14px; }
+        input { width: 100%; height: 40px; background: #020617; border: 1px solid #1e293b; border-radius: 8px; color: white; padding: 0 12px; font-size: 13px; outline: none; }
+        input:focus { border-color: #10b981; }
+        
+        .user-row { background: #020617; border: 1px solid #0f172a; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 11px; font-family: monospace; }
+        .ctrl-btn { background: #0f172a; border: 1px solid #334155; color: #cbd5e1; font-size: 10px; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .ctrl-btn.active { color: #10b981; border-color: rgba(16, 185, 129, 0.3); }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="/dashboard" class="logo">A24 USER VAULT</a>
+        <a href="/dashboard" class="back-btn">⬅️ Back Home</a>
+    </header>
+
+    <div class="card">
+        <div class="section-title">👤 Search & Manage MongoDB Atlas Profiles</div>
+        
+        <!-- 🔍 Live Touch-Optimized Search Input Bar -->
+        <div class="search-container">
+            <input type="text" id="vaultSearchInput" placeholder="Filter profiles by unique client username..." />
+        </div>
+
+        <div id="usersList">
+            <!-- Populated dynamically via live API database streams -->
+        </div>
+    </div>
+
+    <script>
+        let locallyCachedUserArray = [];
+
+        async function fetchLiveUsers() {
+            try {
+                const response = await fetch('/api/v1/users');
+                locallyCachedUserArray = await response.json();
+                renderUserListFiltered("");
+            } catch (err) { console.log('Syncing database rows...'); }
+        }
+
+        // Real-Time Mobile Filtering Engine
+        function renderUserListFiltered(query) {
+            const container = document.getElementById('usersList');
+            container.innerHTML = '';
+            
+            const filtered = locallyCachedUserArray.filter(u => u.username.toLowerCase().includes(query.toLowerCase()));
+            
+            if (filtered.length > 0) {
+                filtered.forEach(user => {
+                    const isConnected = user.status === 'active';
+                    container.innerHTML += `
+                        <div class="user-row">
+                            <div>
+                                <div>User: <b class="target-name-string">${user.username}</b></div>
+                                <div style="color:${isConnected ? '#10b981' : '#64748b'}; font-size:9px; margin-top:2px;">
+                                    ${isConnected ? '⚡ STATUS: CONNECTED // SERVICE ACTIVE' : '📡 STATUS: NOT CONNECTED'}
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:4px;">
+                                <button class="ctrl-btn ${isConnected ? 'active' : ''}" onclick="toggleUserConnection('${user.username}', '${user.status}')">
+                                    ${isConnected ? 'Disconnect' : 'Connect'}
+                                </button>
+                                <button class="ctrl-btn" style="color:#f87171;" onclick="deleteUserRow('${user.username}')">Delete</button>
+                            </div>
+                        </div>`;
+                });
+            } else {
+                container.innerHTML = '<div style="text-align:center; padding:20px; color:#475569; font-family:monospace; font-size:11px;">[ NO MATCHING USER ACCOUNTS IN VAULT ]</div>';
+            }
+        }
+
+        // Bind live search tracking script to check inputs as you type on smartphone keypads
+        document.getElementById('vaultSearchInput').addEventListener('input', (e) => {
+            renderUserListFiltered(e.target.value.trim());
+        });
+
+        async function toggleUserConnection(username, currentStatus) {
+            const nextStatus = currentStatus === 'active' ? 'disabled' : 'active';
+            await fetch('/api/v1/users/toggle-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, status: nextStatus })
+            });
+            fetchLiveUsers();
+        }
+
+        async function deleteUserRow(username) {
+            if(confirm(`Erase account "${username}" completely out of active data pools?`)) {
+                await fetch(`/api/v1/users/delete/${username}`, { method: 'DELETE' });
+                fetchLiveUsers();
+            }
+        }
+
+        window.onload = fetchLiveUsers;
+    </script>
+</body>
+</html>
